@@ -1,23 +1,27 @@
-// カードのマスターデータ
+// カード定義データ
 public class CardDefinition
 {
-    // カードID
     public int Id { get; private set; }
 
-    // カード名
-    public string Name { get; private set; }
+    // 表示名キー（例: CARD_ATTACK）
+    public string NameKey { get; private set; }
 
-    // 効果の種類
+    // 説明文キー（例: CARD_ATTACK_DESC）
+    public string DescriptionKey { get; private set; }
+
     public CardEffectType EffectType { get; private set; }
-
-    // 効果の数値（ダメージ量など）
     public int EffectValue { get; private set; }
 
-    // コンストラクタ
-    public CardDefinition(int id, string name, CardEffectType effectType, int effectValue)
+    public CardDefinition(
+        int id,
+        string nameKey,
+        string descriptionKey,
+        CardEffectType effectType,
+        int effectValue)
     {
         Id = id;
-        Name = name;
+        NameKey = nameKey;
+        DescriptionKey = descriptionKey;
         EffectType = effectType;
         EffectValue = effectValue;
     }

@@ -1,10 +1,10 @@
-// カード効果の種類
-public enum CardEffectType
+// 実行時カード
+public class CardInstance
 {
-    None,               // 効果なし
-    DealDamage,         // ダメージを与える
-    WinGame,            // 特殊勝利
-    LoseGame,           // 特殊敗北
-    GainInitiative,     // イニシアチブ獲得
-    LoseInitiative      // イニシアチブ喪失
+    public CardDefinition Definition { get; private set; }
+
+    public CardInstance(CardDefinition definition)
+    {
+        Definition = definition;
+    }
 }

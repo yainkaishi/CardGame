@@ -1,21 +1,24 @@
-// ゲーム全体の状態を管理するクラス
+using UnityEngine;
+
 public class GameState
 {
-    // 現在のターン数
     public int Turn { get; private set; }
-
-    // 現在のフェーズ
     public GamePhase CurrentPhase { get; private set; }
-
-    // イニシアチブ保持者
     public InitiativePlayer Initiative { get; private set; }
 
-    // プレイヤーHP
     public int PlayerAHP { get; private set; }
     public int PlayerBHP { get; private set; }
 
-    // 勝敗状態
     public GameResult Result { get; private set; }
+
+    public CardInstance PlayerASetCard { get; private set; }
+    public CardInstance PlayerBSetCard { get; private set; }
+
+    private CardDefinition attackCard;
+    private CardDefinition guardCard;
+
+    private bool playerASelected;
+    private bool playerBSelected;
 
     public GameState()
     {
@@ -27,17 +30,66 @@ public class GameState
         PlayerBHP = 5;
 
         Result = GameResult.Playing;
+
+        attackCard = new CardDefinition(1, "CARD_1_NAME", "CARD_1_DESC", CardEffectType.DealDamage, 1);
+        guardCard  = new CardDefinition(2, "CARD_2_NAME", "CARD_2_DESC", CardEffectType.Guard, 0);
+
+        playerASelected = false;
+        playerBSelected = false;
     }
 
-    // フェーズを進める
+    // ===== 選択 =====
+
+    public void SelectPlayerAAttack()
+    {
+        if (CurrentPhase != GamePhase.Setting) return;
+
+        PlayerASetCard = new CardInstance(attackCard);
+        playerASelected = true;
+        CheckBothSelected();
+    }
+
+    public void SelectPlayerAGuard()
+    {
+        if (CurrentPhase != GamePhase.Setting) return;
+
+        PlayerASetCard = new CardInstance(guardCard);
+        playerASelected = true;
+        CheckBothSelected();
+    }
+
+    public void SelectPlayerBAttack()
+    {
+        if (CurrentPhase != GamePhase.Setting) return;
+
+        PlayerBSetCard = new CardInstance(attackCard);
+        playerBSelected = true;
+        CheckBothSelected();
+    }
+
+    public void SelectPlayerBGuard()
+    {
+        if (CurrentPhase != GamePhase.Setting) return;
+
+        PlayerBSetCard = new CardInstance(guardCard);
+        playerBSelected = true;
+        CheckBothSelected();
+    }
+
+    private void CheckBothSelected()
+    {
+        if (playerASelected && playerBSelected)
+        {
+            CurrentPhase = GamePhase.SetComplete;
+        }
+    }
+
+    // ===== フェーズ進行 =====
+
     public void NextPhase()
     {
         switch (CurrentPhase)
         {
-            case GamePhase.Setting:
-                CurrentPhase = GamePhase.SetComplete;
-                break;
-
             case GamePhase.SetComplete:
                 CurrentPhase = GamePhase.Open;
                 break;
@@ -54,27 +106,65 @@ public class GameState
             case GamePhase.End:
                 Turn++;
                 ChangeInitiative();
+
+                PlayerASetCard = null;
+                PlayerBSetCard = null;
+                playerASelected = false;
+                playerBSelected = false;
+
                 CurrentPhase = GamePhase.Setting;
                 break;
         }
     }
 
-    // Resolve処理（仮ルール）
+    // ===== イニシアチブ順解決 =====
+
     private void ExecuteResolve()
     {
+        Debug.Log("Resolve実行");
+
         if (Initiative == InitiativePlayer.Player1)
         {
-            PlayerBHP--;
+            ResolvePlayerA();
+            if (Result == GameResult.Playing)
+                ResolvePlayerB();
         }
         else
         {
-            PlayerAHP--;
+            ResolvePlayerB();
+            if (Result == GameResult.Playing)
+                ResolvePlayerA();
         }
 
         CheckGameOver();
     }
 
-    // 勝敗判定
+    private void ResolvePlayerA()
+    {
+        if (PlayerASetCard == null) return;
+
+        bool aIsAttack = PlayerASetCard.Definition.EffectType == CardEffectType.DealDamage;
+        bool bIsGuard = PlayerBSetCard?.Definition.EffectType == CardEffectType.Guard;
+
+        if (aIsAttack && !bIsGuard)
+        {
+            PlayerBHP -= 1;
+        }
+    }
+
+    private void ResolvePlayerB()
+    {
+        if (PlayerBSetCard == null) return;
+
+        bool bIsAttack = PlayerBSetCard.Definition.EffectType == CardEffectType.DealDamage;
+        bool aIsGuard = PlayerASetCard?.Definition.EffectType == CardEffectType.Guard;
+
+        if (bIsAttack && !aIsGuard)
+        {
+            PlayerAHP -= 1;
+        }
+    }
+
     private void CheckGameOver()
     {
         if (PlayerAHP <= 0)
@@ -84,7 +174,6 @@ public class GameState
             Result = GameResult.Player1Win;
     }
 
-    // イニシアチブ切り替え
     private void ChangeInitiative()
     {
         Initiative = Initiative == InitiativePlayer.Player1
